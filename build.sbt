@@ -41,8 +41,6 @@ val commonSettings = List(
     Libraries.refinedCore.value,
     Libraries.refinedCats.value,
     Libraries.ip4s,
-    Libraries.dockerJava,
-    Libraries.dockerJavaTransport,
     Libraries.monocleLaw       % Test,
     Libraries.scalacheck       % Test,
     Libraries.weaverCats       % Test,
@@ -61,7 +59,7 @@ def dockerSettings(name: String) = List(
 
 lazy val root = (project in file("."))
   .settings(
-    name := "modernstack"
+    name := "dreadnought"
   )
   .aggregate(lib, core, it)
 
@@ -71,6 +69,20 @@ lazy val lib = (project in file("modules/lib"))
 lazy val core = (project in file("modules/core"))
   .settings(commonSettings: _*)
   .dependsOn(lib)
+
+lazy val docker = (project in file("modules/docker"))
+  .settings(commonSettings: _*)
+  .dependsOn(core)
+  .settings(
+    libraryDependencies ++= List(
+      Libraries.dockerJava,
+      Libraries.dockerJavaTransport,
+    )
+  )
+
+lazy val examples = (project in file("modules/examples"))
+  .settings(commonSettings: _*)
+  .dependsOn(docker)
 
 // integration tests
 lazy val it = (project in file("modules/it"))

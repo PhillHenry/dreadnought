@@ -105,7 +105,10 @@ object Docker extends IOApp.Simple {
       portBindings.bind(exposed, Ports.Binding.bindPort(host))
       exposed
     }
-    val links: Seq[Link]                   = dnsMappings.map { case (name, alias) => new Link(name, alias) }
+    val links: Seq[Link]                   = dnsMappings.map { case (name, alias) =>
+      new Link
+      (name, alias)
+    }
     config.getHostConfig.setLinks(links.toList*)
     val container: CreateContainerResponse = config
       .withExposedPorts(exposedPorts.asJava)

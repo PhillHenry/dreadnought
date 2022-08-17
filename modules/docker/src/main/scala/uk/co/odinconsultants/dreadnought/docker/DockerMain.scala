@@ -1,13 +1,11 @@
 package uk.co.odinconsultants.dreadnought.docker
-
+import java.io.Closeable
+import java.time.Duration
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse}
 import com.github.dockerjava.api.model.{Container, Link}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
-
-import java.io.Closeable
-import java.time.Duration
 
 object DockerMain {
 
@@ -15,7 +13,8 @@ object DockerMain {
     * <pre>
     * docker stop $(docker ps -a -q) ; docker rm $(docker ps -a -q)
     * </pre>
-    * See https://stackoverflow.com/questions/43135374/how-to-create-and-start-docker-container-with-specific-port-detached-mode-using
+    * See https://stackoverflow.com/questions/43135374/how-to-create-and-start-docker-container
+    * * -with-specific-port-detached-mode-using
     */
   def main(args: Array[String]): Unit = {
     val config: DefaultDockerClientConfig = buildConfig("unix:///var/run/docker.sock", "1.41")
@@ -71,7 +70,8 @@ object DockerMain {
                      .map(_.asInstanceOf[Container])
     } yield {
       println(
-        s"id = ${container.getId}, image = ${container.getImage}, names = ${container.getNames.mkString(", ")}"
+        s"id = ${container.getId}, image = ${container.getImage}, names = ${container.getNames
+            .mkString(", ")}"
       )
       container
     }
