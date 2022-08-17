@@ -42,20 +42,33 @@ object CatsDocker {
 
   def interpreter[A](client: DockerClient): ManagerRequest[A] => IO[A] = {
     case StartRequest(image, cmd, env, ports, dns) =>
-      start(client, image, cmd, env, ports, dns)
+      createAndStart(client, image, cmd, env, ports, dns)
     case StopRequest(containerId)                  => stopContainer(client, containerId.toString)
     case NamesRequest(containerId)                 =>
       IO(listContainers(client).filter(_.getId == containerId.toString).flatMap(_.getNames))
   }
 
-  def start(
+  def createAndStart(
       dockerClient: DockerClient,
       image: ImageName,
       command: Command,
       environment: Environment,
       portMappings: NetworkMapping[Port],
       dnsMappings: DnsMapping[String],
-  ): IO[ContainerId] = IO {
+  ): IO[ContainerId] = for {
+    container <-
+      createContainer(dockerClient, image, command, environment, portMappings, dnsMappings)
+    id        <- start(dockerClient, container)
+  } yield id
+
+  def createContainer(
+      dockerClient: DockerClient,
+      image: ImageName,
+      command: Command,
+      environment: Environment,
+      portMappings: NetworkMapping[Port],
+      dnsMappings: DnsMapping[ApiVersion],
+  ): IO[CreateContainerResponse] = IO {
     import scala.jdk.CollectionConverters.*
 
     val config: CreateContainerCmd = dockerClient
@@ -82,8 +95,15 @@ object CatsDocker {
       .withExposedPorts(exposedPorts.asJava)
       .withHostConfig(config.getHostConfig.withPortBindings(portBindings))
       .exec
-    // start the container
+    container
+  }
+
+  def start(
+      dockerClient: DockerClient,
+      container: CreateContainerResponse,
+  ): IO[ContainerId] = IO {
     dockerClient.startContainerCmd(container.getId).exec
     ContainerId(container.getId)
   }
+
 }
