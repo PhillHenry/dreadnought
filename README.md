@@ -1,9 +1,10 @@
-# ModernScalaStack
-Bare bones project demonstrating various aspects of the modern Scala ecosystem
+# Dreadnought
+Makes virtualization easy.
 
-This project contains very basic implementations of:
-1. Scala 3
-2. An SBT multi-module project
-3. MDocs (run with `docs/mdoc`)
-4. The Cats ecosystem
-5. The ZIO ecosystem (coming soon)
+Synopsis
+--
+This project aims to make deploying containers to any manager (local Docker, cloud K8s etc) easier.
+
+The code should be agnostic to whether it's deployed locally or remotely, in Docker or Kubernetes.
+
+What's more, testing the flow of data through a full stack should be easy. Some examples are included. 
