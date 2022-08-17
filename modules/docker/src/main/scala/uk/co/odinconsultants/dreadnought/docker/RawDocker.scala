@@ -7,9 +7,12 @@ import com.github.dockerjava.api.model.{Container, Link}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 
-object DockerMain {
+/** All the imperative Docker API.
+  */
+object RawDocker {
 
-  /** Delete everything with:
+  /** Smoke test
+    *  * Delete everything with:
     * <pre>
     * docker stop $(docker ps -a -q) ; docker rm $(docker ps -a -q)
     * </pre>
