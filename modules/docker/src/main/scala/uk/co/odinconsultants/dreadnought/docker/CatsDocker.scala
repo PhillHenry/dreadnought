@@ -48,7 +48,7 @@ object CatsDocker {
       IO(listContainers(client).filter(_.getId == containerId.toString).flatMap(_.getNames))
   }
 
-  def createAndStart(
+  private def createAndStart(
       dockerClient: DockerClient,
       image: ImageName,
       command: Command,
@@ -61,7 +61,7 @@ object CatsDocker {
     id        <- start(dockerClient, container)
   } yield id
 
-  def createContainer(
+  private def createContainer(
       dockerClient: DockerClient,
       image: ImageName,
       command: Command,
@@ -79,26 +79,26 @@ object CatsDocker {
       .withEnv(environment.asJava)
       .withCmd("/bin/bash", "-c", command.toString)
 
-    val portBindings                       = new Ports
-    val exposedPorts: List[ExposedPort]    = for {
+    val portBindings                      = new Ports
+    val exposedPorts: List[ExposedPort]   = for {
       (container, host) <- portMappings
     } yield {
       val exposed: ExposedPort = ExposedPort.tcp(container)
       portBindings.bind(exposed, Ports.Binding.bindPort(host))
       exposed
     }
-    val links: Seq[Link]                   = dnsMappings.map { case (name, alias) =>
+    val links: Seq[Link]                  = dnsMappings.map { case (name, alias) =>
       new Link(name, alias)
     }
     config.getHostConfig.setLinks(links.toList*)
-    val container: CreateContainerResponse = config
+    val response: CreateContainerResponse = config
       .withExposedPorts(exposedPorts.asJava)
       .withHostConfig(config.getHostConfig.withPortBindings(portBindings))
       .exec
-    container
+    response
   }
 
-  def start(
+  private def start(
       dockerClient: DockerClient,
       container: CreateContainerResponse,
   ): IO[ContainerId] = IO {
