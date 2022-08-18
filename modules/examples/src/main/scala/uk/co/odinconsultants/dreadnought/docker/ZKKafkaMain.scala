@@ -19,19 +19,23 @@ object ZKKafkaMain extends IOApp.Simple {
     List.empty,
   )
 
-  def buildFree: Free[ManagerRequest, Unit] = for {
-    zookeeper <- Free.liftF(startZookeeper)
-    names     <- Free.liftF(NamesRequest(zookeeper))
-    kafka     <- Free.liftF(
-                   StartRequest(
-                     ImageName("bitnami/kafka:latest"),
-                     Command("/opt/bitnami/scripts/kafka/entrypoint.sh /run.sh"),
-                     List("KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181", "ALLOW_PLAINTEXT_LISTENER=yes"),
-                     List(9092 -> 9093),
-                     names.map(_ -> "zookeeper"),
-                   )
-                 )
-    _         <- Free.liftF(StopRequest(zookeeper))
-    _         <- Free.liftF(StopRequest(kafka))
-  } yield {}
+  def buildFree: Free[ManagerRequest, Unit] =
+    for {
+      zookeeper <- Free.liftF(startZookeeper)
+      names     <- Free.liftF(NamesRequest(zookeeper))
+      kafka1    <- Free.liftF(startKafkaOnPort(9092, names))
+      _         <- Free.liftF(StopRequest(zookeeper))
+      _         <- Free.liftF(StopRequest(kafka1))
+    } yield {}
+
+  private def startKafkaOnPort(
+      hostPort: Int,
+      names: List[String],
+  ) = StartRequest(
+    ImageName("bitnami/kafka:latest"),
+    Command("/opt/bitnami/scripts/kafka/entrypoint.sh /run.sh"),
+    List("KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181", "ALLOW_PLAINTEXT_LISTENER=yes"),
+    List(9092 -> hostPort),
+    names.map(_ -> "zookeeper"),
+  )
 }
