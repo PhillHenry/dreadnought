@@ -46,6 +46,7 @@ object CatsDocker {
     case StopRequest(containerId)                  => stopContainer(client, containerId.toString)
     case NamesRequest(containerId)                 =>
       IO(listContainers(client).filter(_.getId == containerId.toString).flatMap(_.getNames))
+    case LoggingRequest(containerId)               => IO(log(client, containerId.toString))
   }
 
   private def createAndStart(

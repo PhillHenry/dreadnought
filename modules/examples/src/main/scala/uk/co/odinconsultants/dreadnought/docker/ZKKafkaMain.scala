@@ -26,6 +26,8 @@ object ZKKafkaMain extends IOApp.Simple {
       zookeeper <- Free.liftF(startZookeeper)
       names     <- Free.liftF(NamesRequest(zookeeper))
       kafka1    <- Free.liftF(startKafkaOnPort(port"9092", names))
+      _         <- Free.liftF(LoggingRequest(zookeeper))
+      _         <- Free.liftF(LoggingRequest(kafka1))
       _         <- Free.liftF(StopRequest(zookeeper))
       _         <- Free.liftF(StopRequest(kafka1))
     } yield {}

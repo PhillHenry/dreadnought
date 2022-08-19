@@ -2,8 +2,9 @@ package uk.co.odinconsultants.dreadnought.docker
 import java.io.Closeable
 import java.time.Duration
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse}
-import com.github.dockerjava.api.model.{Container, Link}
+import com.github.dockerjava.api.model.{Container, Frame, Link}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 
@@ -80,18 +81,18 @@ object RawDocker {
     }
     containers.toList
 
-  private def log(dockerClient: DockerClient, id: String) = {
-    import com.github.dockerjava.api.async.ResultCallback
-    import com.github.dockerjava.api.model.Frame
+  def log(dockerClient: DockerClient, id: String): ResultCallback[Frame] = {
+    def report(msg: String): String = s"$id $msg"
     dockerClient
       .logContainerCmd(id)
       .withStdOut(true)
+      .withFollowStream(true)
       .exec(new ResultCallback[Frame] {
         override def onError(throwable: Throwable): Unit = throwable.printStackTrace()
-        override def onNext(x: Frame): Unit              = println(s"onNext: $x")
-        override def onStart(closeable: Closeable): Unit = println(s"closeable = $closeable")
-        override def onComplete(): Unit                  = println("Complete")
-        override def close(): Unit                       = println("close")
+        override def onNext(x: Frame): Unit              = report(s"onNext: $x")
+        override def onStart(closeable: Closeable): Unit = report(s"closeable = $closeable")
+        override def onComplete(): Unit                  = report("Complete")
+        override def close(): Unit                       = report("close")
       })
   }
 

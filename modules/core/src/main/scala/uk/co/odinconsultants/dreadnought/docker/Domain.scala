@@ -27,7 +27,8 @@ case class StartRequest(
     dnsMappings: DnsMapping[String],
 ) extends ManagerRequest[ContainerId]
 
-case class StopRequest(containerId: ContainerId)  extends ManagerRequest[Unit]
-case class NamesRequest(containerId: ContainerId) extends ManagerRequest[List[String]]
+case class StopRequest(containerId: ContainerId)    extends ManagerRequest[Unit]
+case class NamesRequest(containerId: ContainerId)   extends ManagerRequest[List[String]]
+case class LoggingRequest(containerId: ContainerId) extends ManagerRequest[Unit]
 
 object Domain {}
