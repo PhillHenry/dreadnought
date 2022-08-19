@@ -81,19 +81,24 @@ object RawDocker {
     }
     containers.toList
 
-  def log(dockerClient: DockerClient, id: String): ResultCallback[Frame] = {
+  def reporter[T](report: String => T): ResultCallback[Frame] = new ResultCallback[Frame] {
+    override def onError(throwable: Throwable): Unit = report(throwable.toString)
+    override def onNext(x: Frame): Unit              = report(s"onNext: $x")
+    override def onStart(closeable: Closeable): Unit = report(s"closeable = $closeable")
+    override def onComplete(): Unit                  = report("Complete")
+    override def close(): Unit                       = report("close")
+  }
+
+  def logStdOut(dockerClient: DockerClient, id: String): ResultCallback[Frame] = {
     def report(msg: String): String = s"$id $msg"
+    log(dockerClient, id, report)
+  }
+
+  def log[T](dockerClient: DockerClient, id: String, report: String => T): ResultCallback[Frame] =
     dockerClient
       .logContainerCmd(id)
       .withStdOut(true)
       .withFollowStream(true)
-      .exec(new ResultCallback[Frame] {
-        override def onError(throwable: Throwable): Unit = throwable.printStackTrace()
-        override def onNext(x: Frame): Unit              = report(s"onNext: $x")
-        override def onStart(closeable: Closeable): Unit = report(s"closeable = $closeable")
-        override def onComplete(): Unit                  = report("Complete")
-        override def close(): Unit                       = report("close")
-      })
-  }
+      .exec(reporter(report))
 
 }

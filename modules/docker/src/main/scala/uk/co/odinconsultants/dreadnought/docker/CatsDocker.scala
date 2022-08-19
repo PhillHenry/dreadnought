@@ -2,10 +2,13 @@ package uk.co.odinconsultants.dreadnought.docker
 
 import cats.arrow.FunctionK
 import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.std.{Dispatcher, Queue}
 import cats.free.Free
+import fs2.Stream
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse}
-import com.github.dockerjava.api.model.{ExposedPort, Link, Ports}
+import com.github.dockerjava.api.model.{ExposedPort, Frame, Link, Ports}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 import uk.co.odinconsultants.dreadnought.docker.RawDocker.*
@@ -46,8 +49,23 @@ object CatsDocker {
     case StopRequest(containerId)                  => stopContainer(client, containerId.toString)
     case NamesRequest(containerId)                 =>
       IO(listContainers(client).filter(_.getId == containerId.toString).flatMap(_.getNames))
-    case LoggingRequest(containerId)               => IO(log(client, containerId.toString))
+    case LoggingRequest(containerId)               => loggingContainer(client, containerId)
   }
+
+  def loggingContainer(client: DockerClient, containerId: ContainerId): IO[Unit] =
+    Dispatcher[IO].use { dispatcher =>
+      val x: Stream[IO, Unit] = for {
+        q <- Stream.eval(Queue.unbounded[IO, String])
+        _ <- Stream.eval(IO.delay {
+               def report(msg: String) = {
+                 println(s"DELETE_ME: $msg")
+                 dispatcher.unsafeRunSync(q.offer(s"$containerId $msg"))
+               }
+               log(client, containerId.toString, report)
+             })
+      } yield ()
+      x.compile.drain
+    }
 
   private def createAndStart(
       dockerClient: DockerClient,
