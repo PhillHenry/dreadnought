@@ -1,4 +1,5 @@
 package uk.co.odinconsultants.dreadnought.docker
+import cats.effect.{FiberIO, IO}
 
 opaque type ImageName     = String
 opaque type ConnectionURL = String
@@ -27,8 +28,9 @@ case class StartRequest(
     dnsMappings: DnsMapping[String],
 ) extends ManagerRequest[ContainerId]
 
-case class StopRequest(containerId: ContainerId)    extends ManagerRequest[Unit]
-case class NamesRequest(containerId: ContainerId)   extends ManagerRequest[List[String]]
-case class LoggingRequest(containerId: ContainerId) extends ManagerRequest[Unit]
+case class StopRequest(containerId: ContainerId)  extends ManagerRequest[Unit]
+case class NamesRequest(containerId: ContainerId) extends ManagerRequest[List[String]]
+case class LoggingRequest(containerId: ContainerId, cb: String => IO[Unit])
+    extends ManagerRequest[FiberIO[Unit]]
 
 object Domain {}
