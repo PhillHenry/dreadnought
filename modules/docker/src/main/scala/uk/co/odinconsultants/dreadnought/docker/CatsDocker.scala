@@ -52,20 +52,19 @@ object CatsDocker {
     case LoggingRequest(containerId)               => loggingContainer(client, containerId)
   }
 
-  def loggingContainer(client: DockerClient, containerId: ContainerId): IO[Unit] =
-    Dispatcher[IO].use { dispatcher =>
-      val x: Stream[IO, Unit] = for {
-        q <- Stream.eval(Queue.unbounded[IO, String])
-        _ <- Stream.eval(IO.delay {
-               def report(msg: String) = {
-                 println(s"DELETE_ME: $msg")
-                 dispatcher.unsafeRunSync(q.offer(s"$containerId $msg"))
-               }
-               log(client, containerId.toString, report)
-             })
-      } yield ()
-      x.compile.drain
-    }
+  def loggingContainer(client: DockerClient, containerId: ContainerId): IO[Unit] = {
+    val x: Stream[IO, Unit] = for {
+      dispatcher <- Stream.resource(Dispatcher[IO].onFinalize(IO.println("Releasing Dispatcher")))
+      q          <- Stream.eval(Queue.unbounded[IO, String])
+      _          <- Stream.eval(IO.delay {
+                      def report(msg: String): Unit =
+                        dispatcher.unsafeRunAndForget(q.offer(s"$containerId $msg"))
+                      log(client, containerId.toString, report)
+                    })
+      _          <- Stream.eval(q.take.flatMap(x => IO.println(x))).repeat
+    } yield ()
+    x.compile.drain
+  }
 
   private def createAndStart(
       dockerClient: DockerClient,

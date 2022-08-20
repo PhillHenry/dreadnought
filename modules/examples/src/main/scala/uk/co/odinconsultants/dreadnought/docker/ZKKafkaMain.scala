@@ -10,7 +10,7 @@ object ZKKafkaMain extends IOApp.Simple {
     for {
       client <- client
       _      <- interpret(client, buildFree)
-      //      _      <- IO.println("Press any key to exit") *> IO(scala.io.StdIn.readLine())
+      _      <- IO.println("Press any key to exit") *> IO(scala.io.StdIn.readLine())
     } yield println("Started and stopped")
 
   val startZookeeper: StartRequest = StartRequest(
@@ -28,8 +28,8 @@ object ZKKafkaMain extends IOApp.Simple {
       kafka1    <- Free.liftF(startKafkaOnPort(port"9092", names))
       _         <- Free.liftF(LoggingRequest(zookeeper))
       _         <- Free.liftF(LoggingRequest(kafka1))
-      _         <- Free.liftF(StopRequest(zookeeper))
-      _         <- Free.liftF(StopRequest(kafka1))
+//      _         <- Free.liftF(StopRequest(zookeeper))
+//      _         <- Free.liftF(StopRequest(kafka1))
     } yield {}
 
   private def startKafkaOnPort(
