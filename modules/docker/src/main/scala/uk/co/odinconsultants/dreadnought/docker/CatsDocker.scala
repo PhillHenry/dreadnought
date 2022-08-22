@@ -37,7 +37,7 @@ object CatsDocker {
     }
   }
 
-  def interpret(client: DockerClient, tree: Free[ManagerRequest, Unit]): IO[Unit] =
+  def interpret[T](client: DockerClient, tree: Free[ManagerRequest, T]): IO[T] =
     val requestToIO: FunctionK[ManagerRequest, IO] = new FunctionK[ManagerRequest, IO] {
       def apply[A](l: ManagerRequest[A]): IO[A] = interpreter[A](client)(l)
     }
