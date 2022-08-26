@@ -5,6 +5,7 @@ import com.comcast.ip4s.Port
 import uk.co.odinconsultants.dreadnought.docker.CatsDocker.{client, interpret}
 import com.comcast.ip4s.*
 import com.github.dockerjava.api.DockerClient
+import uk.co.odinconsultants.dreadnought.docker.PopularContainers.{startKafkaOnPort, startZookeeper}
 
 object ZKKafkaMain extends IOApp.Simple {
   def run: IO[Unit] =
@@ -12,14 +13,6 @@ object ZKKafkaMain extends IOApp.Simple {
       client <- client
       _      <- waitForStack(client)
     } yield println("Started and stopped")
-
-  val startZookeeper: StartRequest = StartRequest(
-    ImageName("docker.io/bitnami/zookeeper:3.8"),
-    Command("/entrypoint.sh /opt/bitnami/scripts/zookeeper/run.sh"),
-    List("ALLOW_ANONYMOUS_LOGIN=yes"),
-    List(2181 -> 2182),
-    List.empty,
-  )
 
   def waitFor(seek: String, deferred: Deferred[IO, String]): String => IO[Unit] =
     (line: String) =>
@@ -55,14 +48,4 @@ object ZKKafkaMain extends IOApp.Simple {
       _ <- Free.liftF(StopRequest(kafka1))
     } yield {}
 
-  private def startKafkaOnPort(
-      hostPort: Port,
-      names: List[String],
-  ) = StartRequest(
-    ImageName("bitnami/kafka:latest"),
-    Command("/opt/bitnami/scripts/kafka/entrypoint.sh /run.sh"),
-    List("KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181", "ALLOW_PLAINTEXT_LISTENER=yes"),
-    List(9092 -> hostPort.value),
-    names.map(_ -> "zookeeper"),
-  )
 }

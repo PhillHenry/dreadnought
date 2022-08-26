@@ -1,5 +1,5 @@
 package uk.co.odinconsultants.dreadnought.docker
-import cats.effect.{FiberIO, IO}
+import cats.effect.IO
 
 opaque type ImageName     = String
 opaque type ConnectionURL = String
@@ -31,6 +31,6 @@ case class StartRequest(
 case class StopRequest(containerId: ContainerId)  extends ManagerRequest[Unit]
 case class NamesRequest(containerId: ContainerId) extends ManagerRequest[List[String]]
 case class LoggingRequest(containerId: ContainerId, cb: String => IO[Unit])
-    extends ManagerRequest[FiberIO[Unit]]
+    extends ManagerRequest[Any]
 
 object Domain {}
