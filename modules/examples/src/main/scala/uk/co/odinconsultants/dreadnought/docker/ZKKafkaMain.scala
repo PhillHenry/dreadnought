@@ -30,7 +30,7 @@ object ZKKafkaMain extends IOApp.Simple {
 
   def buildFree(
       kafkaStart: Deferred[IO, String],
-      zkStart: Deferred[IO, String],
+      zkStart:    Deferred[IO, String],
   ): Free[ManagerRequest, (ContainerId, ContainerId)] =
     for {
       zookeeper <- Free.liftF(startZookeeper)

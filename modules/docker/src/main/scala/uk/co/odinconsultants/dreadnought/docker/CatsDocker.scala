@@ -53,9 +53,9 @@ object CatsDocker {
   }
 
   def loggingContainer(
-      client: DockerClient,
+      client:      DockerClient,
       containerId: ContainerId,
-      cb: String => IO[Unit],
+      cb:          String => IO[Unit],
   ): IO[Unit] = {
     val x: Stream[IO, Unit] = for {
       dispatcher <- Stream.resource(Dispatcher[IO].onFinalize(IO.println("Releasing Dispatcher")))
@@ -72,11 +72,11 @@ object CatsDocker {
 
   private def createAndStart(
       dockerClient: DockerClient,
-      image: ImageName,
-      command: Command,
-      environment: Environment,
+      image:        ImageName,
+      command:      Command,
+      environment:  Environment,
       portMappings: NetworkMapping[Port],
-      dnsMappings: DnsMapping[String],
+      dnsMappings:  DnsMapping[String],
   ): IO[ContainerId] = for {
     container <-
       createContainer(dockerClient, image, command, environment, portMappings, dnsMappings)
@@ -85,11 +85,11 @@ object CatsDocker {
 
   private def createContainer(
       dockerClient: DockerClient,
-      image: ImageName,
-      command: Command,
-      environment: Environment,
+      image:        ImageName,
+      command:      Command,
+      environment:  Environment,
       portMappings: NetworkMapping[Port],
-      dnsMappings: DnsMapping[ApiVersion],
+      dnsMappings:  DnsMapping[ApiVersion],
   ): IO[CreateContainerResponse] = IO {
     import scala.jdk.CollectionConverters.*
 
@@ -122,7 +122,7 @@ object CatsDocker {
 
   private def start(
       dockerClient: DockerClient,
-      container: CreateContainerResponse,
+      container:    CreateContainerResponse,
   ): IO[ContainerId] = IO {
     dockerClient.startContainerCmd(container.getId).exec
     ContainerId(container.getId)

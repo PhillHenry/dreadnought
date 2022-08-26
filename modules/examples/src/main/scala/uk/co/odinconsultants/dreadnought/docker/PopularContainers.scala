@@ -10,10 +10,10 @@ object PopularContainers {
     List(2181 -> 2182),
     List.empty,
   )
-  
+
   def startKafkaOnPort(
       hostPort: Port,
-      names: List[String],
+      names:    List[String],
   ): StartRequest = StartRequest(
     ImageName("bitnami/kafka:latest"),
     Command("/opt/bitnami/scripts/kafka/entrypoint.sh /run.sh"),
