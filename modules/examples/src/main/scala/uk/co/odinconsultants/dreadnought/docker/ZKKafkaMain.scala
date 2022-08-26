@@ -33,7 +33,7 @@ object ZKKafkaMain extends IOApp.Simple {
       zkStart:    Deferred[IO, String],
   ): Free[ManagerRequest, (ContainerId, ContainerId)] =
     for {
-      zookeeper <- Free.liftF(startZookeeper)
+      zookeeper <- Free.liftF(startZookeeper(port"2182"))
       names     <- Free.liftF(NamesRequest(zookeeper))
       kafka1    <- Free.liftF(startKafkaOnPort(port"9092", names))
       _         <- Free.liftF(

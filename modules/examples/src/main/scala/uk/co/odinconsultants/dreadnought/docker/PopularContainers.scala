@@ -3,11 +3,11 @@ import com.comcast.ip4s.Port
 
 object PopularContainers {
 
-  val startZookeeper: StartRequest = StartRequest(
+  def startZookeeper(hostPort: Port): StartRequest = StartRequest(
     ImageName("docker.io/bitnami/zookeeper:3.8"),
     Command("/entrypoint.sh /opt/bitnami/scripts/zookeeper/run.sh"),
     List("ALLOW_ANONYMOUS_LOGIN=yes"),
-    List(2181 -> 2182),
+    List(2181 -> hostPort.value),
     List.empty,
   )
 
