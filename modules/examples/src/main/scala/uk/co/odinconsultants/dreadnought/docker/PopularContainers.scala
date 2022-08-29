@@ -17,7 +17,18 @@ object PopularContainers {
   ): StartRequest = StartRequest(
     ImageName("bitnami/kafka:latest"),
     Command("/opt/bitnami/scripts/kafka/entrypoint.sh /run.sh"),
-    List("KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181", "ALLOW_PLAINTEXT_LISTENER=yes"),
+    List(
+      "KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181",
+      "ALLOW_PLAINTEXT_LISTENER=yes",
+//      "KAFKA_INTER_BROKER_LISTENER_NAME=LISTENER_BOB",
+//      "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=LISTENER_BOB:PLAINTEXT",
+      s"KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:${hostPort.value}",
+      "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1",
+      "KAFKA_TRANSACTION_ABORT_TIMED_OUT_TRANSACTION_CLEANUP_INTERVAL_MS=60000",
+      "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1",
+      "KAFKA_AUTHORIZER_CLASS_NAME=kafka.security.authorizer.AclAuthorizer",
+      "KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true",
+    ),
     List(9092 -> hostPort.value),
     names.map(_ -> "zookeeper"),
   )
