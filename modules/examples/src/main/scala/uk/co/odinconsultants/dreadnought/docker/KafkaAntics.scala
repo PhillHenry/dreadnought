@@ -88,7 +88,7 @@ object KafkaAntics extends IOApp.Simple {
 //    transactionalProducerStream(producerSettings, topic)
 
   def fromFs2Kafka(producerSettings: ProducerSettings[IO, String, String], topic: String) = {
-    createCustomTopic(topic)
+//    createCustomTopic(topic)
     val toProduce = (0 until 10).map(n => s"key-$n" -> s"value->$n")
     val sProduced =
       for {
@@ -104,47 +104,6 @@ object KafkaAntics extends IOApp.Simple {
         passthrough            <- Stream.eval(batched)
       } yield passthrough
     sProduced
-  }
-  import org.apache.kafka.clients.admin.NewTopic
-  import scala.jdk.CollectionConverters.*
-  import scala.util.Try
-  import org.apache.kafka.clients.admin.AdminClient
-  import java.util.concurrent.TimeUnit
-  import org.apache.kafka.clients.admin.AdminClientConfig
-  def createCustomTopic(
-      topic:             String,
-      topicConfig:       Map[String, String] = Map.empty,
-      partitions:        Int = 1,
-      replicationFactor: Int = 1,
-  ): Try[Unit] = {
-    println(s"Creating $topic")
-    val newTopic = new NewTopic(topic, partitions, replicationFactor.toShort)
-      .configs(topicConfig.asJava)
-
-    withAdminClient { adminClient =>
-      adminClient
-        .createTopics(Seq(newTopic).asJava)
-        .all
-        .get(2, TimeUnit.SECONDS)
-    }.map(_ => ())
-  }
-  protected def withAdminClient[T](
-      body: AdminClient => T
-  ): Try[T] = {
-    val adminClientCloseTimeout: FiniteDuration = 2.seconds
-    val adminClient                             = AdminClient.create(
-      Map[String, Object](
-        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG       -> "127.0.0.1:9092",
-        AdminClientConfig.CLIENT_ID_CONFIG               -> "test-kafka-admin-client",
-        AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG      -> "10000",
-        AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG -> "10000",
-      ).asJava
-    )
-
-    val res = Try(body(adminClient))
-    adminClient.close(java.time.Duration.ofMillis(adminClientCloseTimeout.toMillis))
-
-    res
   }
 //      .through(commitBatchWithin(500, 15.seconds))
   private def transactionalProducerStream(
