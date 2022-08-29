@@ -14,7 +14,7 @@ object KafkaAntics extends IOApp.Simple {
       port:    Port,
       topic:   String = "test_topic",
   ) = {
-    val bootstrapServer                                        = s"localhost:${port.value}"
+    val bootstrapServer                                        = s"${address}:${port.value}"
     val producerSettings: ProducerSettings[IO, String, String] =
       ProducerSettings[IO, String, String]
         .withBootstrapServers(bootstrapServer)
@@ -28,7 +28,7 @@ object KafkaAntics extends IOApp.Simple {
 //    consume(consumerSettings, topic).concurrently(produce(producerSettings, topic))
 //    produce(producerSettings, topic).concurrently(consume(consumerSettings, topic))
 //    produce(producerSettings, topic)
-    fromFs2Kafka(producerSettings, topic)
+    consume(consumerSettings, topic).concurrently(fromFs2Kafka(producerSettings, topic))
   }
 
   def consume(
@@ -89,7 +89,7 @@ object KafkaAntics extends IOApp.Simple {
 
   def fromFs2Kafka(producerSettings: ProducerSettings[IO, String, String], topic: String) = {
     createCustomTopic(topic)
-    val toProduce = (0 until 100).map(n => s"key-$n" -> s"value->$n")
+    val toProduce = (0 until 10).map(n => s"key-$n" -> s"value->$n")
     val sProduced =
       for {
         producer               <- KafkaProducer.stream(producerSettings)
