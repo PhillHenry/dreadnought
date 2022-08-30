@@ -28,7 +28,7 @@ object KafkaAntics extends IOApp.Simple {
 //    consume(consumerSettings, topic).concurrently(produce(producerSettings, topic))
 //    produce(producerSettings, topic).concurrently(consume(consumerSettings, topic))
 //    produce(producerSettings, topic)
-    consume(consumerSettings, topic).concurrently(fromFs2Kafka(producerSettings, topic))
+    consume(consumerSettings, topic).concurrently(produce(producerSettings, topic))
   }
 
   def consume(
@@ -55,7 +55,7 @@ object KafkaAntics extends IOApp.Simple {
       topic: String
   ): Stream[IO, TransactionalProducerRecords[IO, Unit, String, String]] =
     Stream
-      .emits(List("a", "b", "c", "d").zipWithIndex)
+      .emits(List("x", "y", "z").zipWithIndex)
       .map { case (k, v) =>
         TransactionalProducerRecords.one(
           CommittableProducerRecords.one(
@@ -75,17 +75,17 @@ object KafkaAntics extends IOApp.Simple {
       producerSettings: ProducerSettings[IO, String, String],
       topic:            String,
   ) =
-    KafkaProducer
-      .stream(producerSettings)
-      .flatMap { producer =>
-        val s: Stream[IO, IO[ProducerResult[Int, String, String]]] = createPureMessages(topic)
-          .evalMap { case record =>
-            IO.println(s"buffering $record") *> producer.produce(record)
-          }
-        s // .evalMap(_.flatMap(IO.println))
-      }
+//    KafkaProducer
+//      .stream(producerSettings)
+//      .flatMap { producer =>
+//        val s: Stream[IO, IO[ProducerResult[Int, String, String]]] = createPureMessages(topic)
+//          .evalMap { case record =>
+//            IO.println(s"buffering $record") *> producer.produce(record)
+//          }
+//        s // .evalMap(_.flatMap(IO.println))
+//      }
 //      .evalTap(_.flatMap(IO.println)) // <- this causes: "org.apache.kafka.common.errors.TimeoutException: Expiring 1 record(s) for test_topic-0:120000 ms has passed since batch creation"
-//    transactionalProducerStream(producerSettings, topic)
+    transactionalProducerStream(producerSettings, topic)
 
   def fromFs2Kafka(producerSettings: ProducerSettings[IO, String, String], topic: String) = {
 //    createCustomTopic(topic)
@@ -106,6 +106,17 @@ object KafkaAntics extends IOApp.Simple {
     sProduced
   }
 //      .through(commitBatchWithin(500, 15.seconds))
+
+  /** createTxMessage and producer.produce( gives:
+    * buffering TransactionalProducerRecords(CommittableProducerRecords(ProducerRecord(topic =
+    *  test_topic, key = key_x, value = val_0), CommittableOffset(test_topic-1 -> 1, group)), ())
+    * org.apache.kafka.common.errors.TimeoutException: Timeout expired after 60000 milliseconds while
+    * awaiting EndTxn(false)
+    * org.apache.kafka.common.errors.TimeoutException: Timeout expired after 60000 milliseconds while
+    * awaiting AddOffsetsToTxn
+    * org.apache.kafka.common.errors.TimeoutException: Timeout expired after 60000 milliseconds while
+    * awaiting AddOffsetsToTxn
+    */
   private def transactionalProducerStream(
       producerSettings: ProducerSettings[IO, String, String],
       topic:            String,
@@ -117,15 +128,22 @@ object KafkaAntics extends IOApp.Simple {
           producerSettings.withRetries(1),
         )
       )
-      .evalTap(x => IO.println(s"Created $x"))
       .flatMap { producer =>
-        val txs = for {
-          records <- createTxMessages(topic)
-        } yield producer.produce(records)
-        Stream.eval(IO.println("about to TX")) ++ txs.evalMap(_.flatMap(x => IO.println(x)))
+        val txs = produceWithoutOffsets(producer, topic)
+        Stream.eval(IO.println("about to TX")) ++ txs
 //        producer.produceWithoutOffsets()
 //          createPureMessages(topic).through(TransactionalKafkaProducer.pipe(producerSettings, producer))
       }
-  def run: IO[Unit]                                                                       = produceMessages(ip"127.0.0.1", port"9092").compile.drain
+
+  /** This works
+    */
+  private def produceWithoutOffsets(
+      producer: TransactionalKafkaProducer.WithoutOffsets[IO, String, String],
+      topic:    String,
+  ) =
+    createPureMessages(topic).evalMap { case record =>
+      IO.println(s"buffering $record") *> producer.produceWithoutOffsets(record)
+    }
+  def run: IO[Unit] = produceMessages(ip"127.0.0.1", port"9092").compile.drain
 
 }
