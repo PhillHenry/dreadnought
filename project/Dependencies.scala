@@ -65,6 +65,8 @@ object Dependencies {
 
     val http4sJdkWs = "org.http4s" %% "http4s-jdk-http-client" % V.http4sWs
 
+    val logBack = "ch.qos.logback" % "logback-classic" % "1.2.11"
+
     val natchezCore      = "org.tpolecat" %% "natchez-core"      % V.natchez
     val natchezHoneycomb = "org.tpolecat" %% "natchez-honeycomb" % V.natchez
     val natchezHttp4s    = "org.tpolecat" %% "natchez-http4s"    % V.natchezHttp4s
