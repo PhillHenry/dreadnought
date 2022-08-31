@@ -23,12 +23,11 @@ object KafkaAntics extends IOApp.Simple {
       ConsumerSettings[IO, String, String]
         .withAutoOffsetReset(AutoOffsetReset.Earliest)
         .withBootstrapServers(bootstrapServer)
-        .withGroupId("group")
+        .withGroupId("group_PH")
 
-//    consume(consumerSettings, topic).concurrently(produce(producerSettings, topic))
-//    produce(producerSettings, topic).concurrently(consume(consumerSettings, topic))
-//    produce(producerSettings, topic)
-    consume(consumerSettings, topic).concurrently(produce(producerSettings, topic))
+    consume(consumerSettings, topic)
+      .interruptAfter(100.seconds)
+      .concurrently(produce(producerSettings, topic))
   }
 
   def consume(
@@ -67,6 +66,23 @@ object KafkaAntics extends IOApp.Simple {
               _ => IO.unit,
             ),
           )
+        )
+      }
+      .covary[IO]
+  def createCommittableMessages(
+      topic: String
+  ): Stream[IO, CommittableProducerRecords[IO, String, String]] =
+    Stream
+      .emits(List("x", "y", "z").zipWithIndex)
+      .map { case (k, v) =>
+        CommittableProducerRecords.one(
+          ProducerRecord(topic, s"key_$k", s"val_$v"),
+          CommittableOffset[IO](
+            new org.apache.kafka.common.TopicPartition(topic, 1),
+            new org.apache.kafka.clients.consumer.OffsetAndMetadata(1),
+            Some("group"),
+            _ => IO.unit,
+          ),
         )
       }
       .covary[IO]
@@ -129,10 +145,18 @@ object KafkaAntics extends IOApp.Simple {
         )
       )
       .flatMap { producer =>
-        val txs = produceWithoutOffsets(producer, topic)
+        val txs = produceTransactionally(producer, topic)
         Stream.eval(IO.println("about to TX")) ++ txs
 //        producer.produceWithoutOffsets()
-//          createPureMessages(topic).through(TransactionalKafkaProducer.pipe(producerSettings, producer))
+      }
+
+  private def produceTransactionally(
+      producer: TransactionalKafkaProducer[IO, String, String],
+      topic:    String,
+  ) =
+    createTxMessages(topic)
+      .evalMap { case record =>
+        IO.println(s"buffering $record") *> producer.produce(record)
       }
 
   /** This works
@@ -144,6 +168,11 @@ object KafkaAntics extends IOApp.Simple {
     createPureMessages(topic).evalMap { case record =>
       IO.println(s"buffering $record") *> producer.produceWithoutOffsets(record)
     }
-  def run: IO[Unit] = produceMessages(ip"127.0.0.1", port"9092").compile.drain
+  def run: IO[Unit] = for {
+    client      <- CatsDocker.client
+    (zk, kafka) <- ZKKafkaMain.waitForStack(client)
+    _           <- produceMessages(ip"127.0.0.1", port"9092").compile.drain
+    _           <- CatsDocker.interpret(client, ZKKafkaMain.tearDownFree(zk, kafka))
+  } yield println("Started and stopped")
 
 }

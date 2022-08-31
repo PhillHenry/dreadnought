@@ -10,8 +10,9 @@ import uk.co.odinconsultants.dreadnought.docker.PopularContainers.{startKafkaOnP
 object ZKKafkaMain extends IOApp.Simple {
   def run: IO[Unit] =
     for {
-      client <- client
-      _      <- waitForStack(client)
+      client      <- client
+      (zk, kafka) <- waitForStack(client)
+      _           <- interpret(client, tearDownFree(zk, kafka))
     } yield println("Started and stopped")
 
   def waitFor(seek: String, deferred: Deferred[IO, String]): String => IO[Unit] =
@@ -19,14 +20,13 @@ object ZKKafkaMain extends IOApp.Simple {
       if (line.contains(seek)) IO.println(s"Started!\n$line") *> deferred.complete(line).void
       else IO.println(line)
 
-  def waitForStack(client: DockerClient): IO[Unit] = for {
+  def waitForStack(client: DockerClient): IO[(ContainerId, ContainerId)] = for {
     kafkaStart    <- Deferred[IO, String]
     zkStart       <- Deferred[IO, String]
     (zk, kafka)   <- interpret(client, buildFree(kafkaStart, zkStart))
     kafkaStartMsg <- kafkaStart.get
     zkStartMsg    <- zkStart.get
-    _             <- interpret(client, tearDownFree(zk, kafka))
-  } yield println(s"Kafka start message = $kafkaStartMsg\nZK start message = $zkStartMsg")
+  } yield (zk, kafka)
 
   def buildFree(
       kafkaStart: Deferred[IO, String],

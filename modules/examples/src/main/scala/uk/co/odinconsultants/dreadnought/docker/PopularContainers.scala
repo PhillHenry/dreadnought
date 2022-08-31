@@ -11,6 +11,13 @@ object PopularContainers {
     List.empty,
   )
 
+  /** See
+    * https://stackoverflow.com/questions/48731030/no-security-protocol-defined-for-listener-plaintext-tcp
+    * https://www.confluent.io/en-gb/blog/kafka-listeners-explained/
+    * https://stackoverflow.com/questions/46750420/kafka-producer-error-expiring-10-records-for-topicxxxxxx-6686-ms-has-passed
+    * https://stackoverflow.com/questions/42998859/kafka-server-configuration-listeners-vs-advertised-listeners
+    * https://stackoverflow.com/questions/30880811/kafka-quickstart-advertised-host-name-gives-kafka-common-leadernotavailableexce
+    */
   def startKafkaOnPort(
       hostPort: Port,
       names:    List[String],
