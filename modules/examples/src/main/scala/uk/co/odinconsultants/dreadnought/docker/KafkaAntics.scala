@@ -43,16 +43,16 @@ object KafkaAntics extends IOApp.Simple {
         IO.println(s"Consumed ${record.key} -> ${record.value}")
       }
 
-  def createPureMessages(topic: String): Stream[IO, ProducerRecords[Int, String, String]] =
+  def createPureMessages(topic: String): Stream[IO, ProducerRecords[String, String]] =
     Stream
       .emits(List("a", "b", "c", "d").zipWithIndex)
       .evalTap(x => IO.println(s"Creating message $x"))
-      .map((x, i) => ProducerRecords.one(ProducerRecord(topic, s"key_$x", s"val_$x"), i))
+      .map((x, i) => ProducerRecords.one(ProducerRecord(topic, s"key_$x", s"val_$x")))
       .covary[IO]
 
   def createTxMessages(
       topic: String
-  ): Stream[IO, TransactionalProducerRecords[IO, Unit, String, String]] =
+  ): Stream[IO, TransactionalProducerRecords[IO, String, String]] =
     Stream
       .emits(List("x", "y", "z").zipWithIndex)
       .map { case (k, v) =>
