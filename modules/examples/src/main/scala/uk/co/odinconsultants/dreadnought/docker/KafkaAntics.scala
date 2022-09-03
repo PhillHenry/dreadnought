@@ -13,7 +13,9 @@ object KafkaAntics extends IOApp.Simple {
       address: IpAddress,
       port:    Port,
       topic:   String = "test_topic",
-  ) = {
+  ): Stream[IO, Unit] = {
+    createCustomTopic(topic)
+
     val bootstrapServer                                        = s"${address}:${port.value}"
     val producerSettings: ProducerSettings[IO, String, String] =
       ProducerSettings[IO, String, String]
@@ -26,8 +28,10 @@ object KafkaAntics extends IOApp.Simple {
         .withGroupId("group_PH")
 
     consume(consumerSettings, topic)
-      .interruptAfter(100.seconds)
-      .concurrently(produce(producerSettings, topic))
+      .interruptAfter(10.seconds)
+      .concurrently(
+        produce(producerSettings, topic).map(_ => ())
+      )
   }
 
   def consume(
@@ -49,6 +53,47 @@ object KafkaAntics extends IOApp.Simple {
       .evalTap(x => IO.println(s"Creating message $x"))
       .map((x, i) => ProducerRecords.one(ProducerRecord(topic, s"key_$x", s"val_$x")))
       .covary[IO]
+  import org.apache.kafka.clients.admin.NewTopic
+  import scala.jdk.CollectionConverters.*
+  import scala.util.Try
+  import org.apache.kafka.clients.admin.AdminClient
+  import java.util.concurrent.TimeUnit
+  import org.apache.kafka.clients.admin.AdminClientConfig
+  def createCustomTopic(
+      topic:             String,
+      topicConfig:       Map[String, String] = Map.empty,
+      partitions:        Int = 5,
+      replicationFactor: Int = 1,
+  ): Try[Unit] = {
+    println(s"Creating $topic")
+    val newTopic = new NewTopic(topic, partitions, replicationFactor.toShort)
+      .configs(topicConfig.asJava)
+
+    withAdminClient { adminClient =>
+      adminClient
+        .createTopics(Seq(newTopic).asJava)
+        .all
+        .get(4, TimeUnit.SECONDS)
+    }.map(x => println(s"Admin client result: $x"))
+  }
+  protected def withAdminClient[T](
+      body: AdminClient => T
+  ): Try[T] = {
+    val adminClientCloseTimeout: FiniteDuration = 2.seconds
+    val adminClient                             = AdminClient.create(
+      Map[String, Object](
+        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG       -> "127.0.0.1:9092",
+        AdminClientConfig.CLIENT_ID_CONFIG               -> "test-kafka-admin-client",
+        AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG      -> "10000",
+        AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG -> "10000",
+      ).asJava
+    )
+
+    val res = Try(body(adminClient))
+    adminClient.close(java.time.Duration.ofMillis(adminClientCloseTimeout.toMillis))
+
+    res
+  }
 
   def createTxMessages(
       topic: String
@@ -63,7 +108,7 @@ object KafkaAntics extends IOApp.Simple {
               new org.apache.kafka.common.TopicPartition(topic, 1),
               new org.apache.kafka.clients.consumer.OffsetAndMetadata(1),
               Some("group"),
-              _ => IO.unit,
+              x => IO.println(s"offset/partition = $x"),
             ),
           )
         )
@@ -141,7 +186,7 @@ object KafkaAntics extends IOApp.Simple {
       .stream(
         TransactionalProducerSettings(
           s"transactionId${System.currentTimeMillis()}",
-          producerSettings.withRetries(1),
+          producerSettings.withRetries(10),
         )
       )
       .flatMap { producer =>
@@ -168,10 +213,14 @@ object KafkaAntics extends IOApp.Simple {
     createPureMessages(topic).evalMap { case record =>
       IO.println(s"buffering $record") *> producer.produceWithoutOffsets(record)
     }
+
   def run: IO[Unit] = for {
     client      <- CatsDocker.client
     (zk, kafka) <- ZKKafkaMain.waitForStack(client)
-    _           <- produceMessages(ip"127.0.0.1", port"9092").compile.drain
+    _           <- produceMessages(ip"127.0.0.1", port"9092")
+                     .handleErrorWith(x => Stream.eval(IO(x.printStackTrace())))
+                     .compile
+                     .drain
     _           <- CatsDocker.interpret(client, ZKKafkaMain.tearDownFree(zk, kafka))
   } yield println("Started and stopped")
 
