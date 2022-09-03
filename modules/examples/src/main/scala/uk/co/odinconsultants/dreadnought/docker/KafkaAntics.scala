@@ -59,10 +59,15 @@ object KafkaAntics extends IOApp.Simple {
   import org.apache.kafka.clients.admin.AdminClient
   import java.util.concurrent.TimeUnit
   import org.apache.kafka.clients.admin.AdminClientConfig
+
+  /** "I made the replication factor less than the number of partitions and it worked for me.
+    * It sounds odd to me but yes, it started working after it."
+    * https://stackoverflow.com/questions/61217084/error-while-fetching-metadata-with-correlation-id-92-mytest-unknown-topic-or
+    */
   def createCustomTopic(
       topic:             String,
       topicConfig:       Map[String, String] = Map.empty,
-      partitions:        Int = 5,
+      partitions:        Int = 2,
       replicationFactor: Int = 1,
   ): Try[Unit] = {
     println(s"Creating $topic")
