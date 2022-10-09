@@ -2,8 +2,9 @@ import Dependencies._
 
 ThisBuild / scalaVersion     := "3.1.1"
 ThisBuild / version          := "0.1.0"
-ThisBuild / organization     := "uk.co.odinconsultant"
+ThisBuild / organization     := "uk.co.odinconsultants"
 ThisBuild / organizationName := "OdinConsultants"
+ThisBuild / versionScheme    := Some("early-semver")
 
 ThisBuild / evictionErrorLevel := Level.Warn
 ThisBuild / scalafixDependencies += Libraries.organizeImports
@@ -23,21 +24,14 @@ val commonSettings = List(
     Libraries.cats,
     Libraries.testkit,
     Libraries.catsEffect,
-    Libraries.circeCore.value,
-    Libraries.circeParser.value,
-    Libraries.circeRefined.value,
     Libraries.cirisCore,
     Libraries.cirisRefined,
     Libraries.fs2Core,
     Libraries.fs2Kafka,
-    Libraries.http4sDsl,
-    Libraries.http4sMetrics,
-    Libraries.http4sServer,
     Libraries.kittens,
     Libraries.monocleCore.value,
     Libraries.neutronCore,
     Libraries.odin,
-    Libraries.redis4catsEffects,
     Libraries.refinedCore.value,
     Libraries.refinedCats.value,
     Libraries.ip4s,
