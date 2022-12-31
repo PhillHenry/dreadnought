@@ -13,7 +13,7 @@ object KafkaAntics extends IOApp.Simple {
       address: IpAddress,
       port:    Port,
       topic:   String = "test_topic",
-  ): Stream[IO, Unit] = {
+  ): Stream[IO, CommittableConsumerRecord[IO, String, String]] = {
     createCustomTopic(topic)
 
     val bootstrapServer                                        = s"${address}:${port.value}"
@@ -37,14 +37,14 @@ object KafkaAntics extends IOApp.Simple {
   def consume(
       consumerSettings: ConsumerSettings[IO, String, String],
       topic:            String,
-  ): Stream[IO, Unit] =
+  ): Stream[IO, CommittableConsumerRecord[IO, String, String]] =
     KafkaConsumer
       .stream(consumerSettings)
       .subscribeTo(topic)
       .records
-      .evalMap { committable =>
+      .evalMap { (committable: CommittableConsumerRecord[IO, String, String]) =>
         val record = committable.record
-        IO.println(s"Consumed ${record.key} -> ${record.value}")
+        IO.println(s"Consumed ${record.key} -> ${record.value}") *> IO(committable)
       }
 
   def createPureMessages(topic: String): Stream[IO, ProducerRecords[String, String]] =
