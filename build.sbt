@@ -6,47 +6,44 @@ ThisBuild / organization     := "uk.co.odinconsultants"
 ThisBuild / organizationName := "OdinConsultants"
 ThisBuild / versionScheme    := Some("early-semver")
 
-ThisBuild / evictionErrorLevel := Level.Warn
+ThisBuild / evictionErrorLevel   := Level.Warn
 ThisBuild / scalafixDependencies += Libraries.organizeImports
 
 ThisBuild / resolvers += Resolver.sonatypeRepo("snapshots")
 
-
 ThisBuild / organizationHomepage := Some(url("http://odinconsultants.co.uk/"))
 
-ThisBuild / scmInfo := Some(
+ThisBuild / scmInfo     := Some(
   ScmInfo(
     url("https://github.com/PhillHenry/dreadnought"),
     "scm:git@github.com:PhillHenry/dreadnought",
   )
 )
-ThisBuild / developers := List(
+ThisBuild / developers  := List(
   Developer(
     id = "PhillipHenry",
     name = "PhillipHenry",
     email = "ph@odinconsultants.co.uk",
-    url = url("http://odinconsultants.co.uk")
+    url = url("http://odinconsultants.co.uk"),
   )
 )
 
 ThisBuild / description := "Handle Docker containers in Scala"
-ThisBuild / licenses := List(
+ThisBuild / licenses    := List(
   "Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt")
 )
-ThisBuild / homepage := Some(url("https://github.com/PhillHenry/dreadnought"))
+ThisBuild / homepage    := Some(url("https://github.com/PhillHenry/dreadnought"))
 
 // Remove all additional repository other than Maven Central from POM
 ThisBuild / pomIncludeRepository := { _ => false }
-ThisBuild / publishTo := {
+ThisBuild / publishTo            := {
   val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  if (isSnapshot.value) Some("snapshots".at(nexus + "content/repositories/snapshots"))
+  else Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
 }
-ThisBuild / publishMavenStyle := true
+ThisBuild / publishMavenStyle    := true
 
-
-
-Compile / run / fork           := true
+Compile / run / fork := true
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 Global / semanticdbEnabled    := true // for metals
@@ -91,17 +88,17 @@ lazy val root = (project in file("."))
   .settings(
     name := "dreadnought"
   )
-  .aggregate(lib, core, it)
+  .aggregate(lib, core, it, docker)
 
 lazy val lib = (project in file("modules/lib"))
-  .settings(commonSettings: _*)
+  .settings(commonSettings ++ List(name := "dreadnought-lib"): _*)
 
 lazy val core = (project in file("modules/core"))
-  .settings(commonSettings: _*)
+  .settings(commonSettings ++ List(name := "dreadnought-core"): _*)
   .dependsOn(lib)
 
 lazy val docker = (project in file("modules/docker"))
-  .settings(commonSettings: _*)
+  .settings(commonSettings ++ List(name := "dreadnought-docker"): _*)
   .dependsOn(core)
   .settings(
     libraryDependencies ++= List(
@@ -111,12 +108,12 @@ lazy val docker = (project in file("modules/docker"))
   )
 
 lazy val examples = (project in file("modules/examples"))
-  .settings(commonSettings: _*)
+  .settings(commonSettings ++ List(name := "dreadnought-examples"): _*)
   .dependsOn(docker)
 
 // integration tests
 lazy val it = (project in file("modules/it"))
-  .settings(commonSettings: _*)
+  .settings(commonSettings ++ List(name := "dreadnought-it"): _*)
   .dependsOn(core)
   .settings(
     libraryDependencies ++= List(
