@@ -1,7 +1,7 @@
 import Dependencies._
 
 ThisBuild / scalaVersion     := "3.1.1"
-ThisBuild / version          := "0.1.0"
+ThisBuild / version          := "0.1.1"
 ThisBuild / organization     := "uk.co.odinconsultants"
 ThisBuild / organizationName := "OdinConsultants"
 ThisBuild / versionScheme    := Some("early-semver")
@@ -88,7 +88,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "dreadnought"
   )
-  .aggregate(lib, core, it, docker)
+  .aggregate(lib, core, it, docker, examples)
 
 lazy val lib = (project in file("modules/lib"))
   .settings(commonSettings ++ List(name := "dreadnought-lib"): _*)

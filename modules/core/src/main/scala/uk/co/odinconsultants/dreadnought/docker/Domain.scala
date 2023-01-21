@@ -33,4 +33,4 @@ case class NamesRequest(containerId: ContainerId) extends ManagerRequest[List[St
 case class LoggingRequest(containerId: ContainerId, cb: String => IO[Unit])
     extends ManagerRequest[Any]
 
-object Domain {}
+// TODO - a PullRequest to get an image
