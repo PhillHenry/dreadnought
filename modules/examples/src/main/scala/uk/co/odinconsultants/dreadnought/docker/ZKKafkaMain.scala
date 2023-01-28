@@ -5,27 +5,28 @@ import com.comcast.ip4s.Port
 import uk.co.odinconsultants.dreadnought.docker.CatsDocker.{client, interpret}
 import com.comcast.ip4s.*
 import com.github.dockerjava.api.DockerClient
+import uk.co.odinconsultants.dreadnought.docker.Logging.verboseWaitFor
 import uk.co.odinconsultants.dreadnought.docker.PopularContainers.{startKafkaOnPort, startZookeeper}
+
+import scala.concurrent.duration.*
 
 object ZKKafkaMain extends IOApp.Simple {
   def run: IO[Unit] =
     for {
       client      <- client
-      (zk, kafka) <- waitForStack(client)
+      (zk, kafka) <- startKafkaCluster(client)
       _           <- interpret(client, tearDownFree(zk, kafka))
     } yield println("Started and stopped")
 
-  def waitFor(seek: String, deferred: Deferred[IO, String]): String => IO[Unit] =
-    (line: String) =>
-      if (line.contains(seek)) IO.println(s"Started!\n$line") *> deferred.complete(line).void
-      else IO.println(line)
-
-  def waitForStack(client: DockerClient): IO[(ContainerId, ContainerId)] = for {
+  def startKafkaCluster(
+      client:  DockerClient,
+      timeout: FiniteDuration = 10.seconds,
+  ): IO[(ContainerId, ContainerId)] = for {
     kafkaStart    <- Deferred[IO, String]
     zkStart       <- Deferred[IO, String]
     (zk, kafka)   <- interpret(client, buildFree(kafkaStart, zkStart))
-    kafkaStartMsg <- kafkaStart.get
-    zkStartMsg    <- zkStart.get
+    kafkaStartMsg <- kafkaStart.get.timeout(timeout)
+    zkStartMsg    <- zkStart.get.timeout(timeout)
   } yield (zk, kafka)
 
   def buildFree(
@@ -37,9 +38,9 @@ object ZKKafkaMain extends IOApp.Simple {
       names     <- Free.liftF(NamesRequest(zookeeper))
       kafka1    <- Free.liftF(startKafkaOnPort(port"9092", names))
       _         <- Free.liftF(
-                     LoggingRequest(kafka1, waitFor("started (kafka.server.KafkaServer)", kafkaStart))
+                     LoggingRequest(kafka1, verboseWaitFor("started (kafka.server.KafkaServer)", kafkaStart))
                    )
-      _         <- Free.liftF(LoggingRequest(zookeeper, waitFor("Started AdminServer on address", zkStart)))
+      _         <- Free.liftF(LoggingRequest(zookeeper, verboseWaitFor("Started AdminServer on address", zkStart)))
     } yield (zookeeper, kafka1)
 
   def tearDownFree(zookeeper: ContainerId, kafka1: ContainerId): Free[ManagerRequest, Unit] =
