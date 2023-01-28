@@ -34,15 +34,15 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
       loggingLatch: LoggingLatch,
       timeout:      FiniteDuration = 10.seconds,
   ): IO[(ContainerId, ContainerId)] = for {
-    sparkStart <- Deferred[IO, String]
-    sparkWait   = loggingLatch("I have been elected leader! New state: ALIVE", sparkStart)
+    sparkLatch <- Deferred[IO, String]
+    sparkWait   = loggingLatch("I have been elected leader! New state: ALIVE", sparkLatch)
     spark      <- startMaster(port"8082", port"7077", client, sparkWait)
-    _          <- sparkStart.get.timeout(timeout)
+    _          <- sparkLatch.get.timeout(timeout)
     masterName <- CatsDocker.interpret(client, Free.liftF(NamesRequest(spark)))
-    slaveStart <- Deferred[IO, String]
-    slaveWait   = loggingLatch("Successfully registered with master", slaveStart)
+    slaveLatch <- Deferred[IO, String]
+    slaveWait   = loggingLatch("Successfully registered with master", slaveLatch)
     slave      <- startSlave(port"7077", masterName, client, slaveWait)
-    _          <- slaveStart.get.timeout(timeout)
+    _          <- slaveLatch.get.timeout(timeout)
   } yield (spark, slave)
 
   def startMaster(
