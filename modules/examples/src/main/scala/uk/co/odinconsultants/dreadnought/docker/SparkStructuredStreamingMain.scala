@@ -6,9 +6,10 @@ import com.comcast.ip4s.*
 import com.github.dockerjava.api.DockerClient
 import fs2.kafka.*
 import fs2.{Chunk, Pipe, Pure, Stream}
-import uk.co.odinconsultants.dreadnought.Flow.Interpret
+import uk.co.odinconsultants.dreadnought.Flow.{Interpret, race}
 import uk.co.odinconsultants.dreadnought.docker.*
-import uk.co.odinconsultants.dreadnought.docker.Logging.{verboseWaitFor, LoggingLatch}
+import uk.co.odinconsultants.dreadnought.docker.Algebra.toInterpret
+import uk.co.odinconsultants.dreadnought.docker.Logging.{LoggingLatch, verboseWaitFor}
 
 import scala.concurrent.duration.*
 
@@ -20,12 +21,8 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
   def run: IO[Unit] = for {
     client         <- CatsDocker.client
     (spark, slave) <- startSparkCluster(client, verboseWaitFor)
-    _              <- CatsDocker.interpret(
-                        client,
-                        for {
-                          _ <- Free.liftF(StopRequest(spark))
-                          _ <- Free.liftF(StopRequest(slave))
-                        } yield {},
+    _              <- race(toInterpret(client))(
+                        List(spark, slave).map(StopRequest.apply)
                       )
   } yield println("Started and stopped" + spark)
 
@@ -34,16 +31,33 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
       loggingLatch: LoggingLatch,
       timeout:      FiniteDuration = 10.seconds,
   ): IO[(ContainerId, ContainerId)] = for {
-    sparkLatch <- Deferred[IO, String]
-    sparkWait   = loggingLatch("I have been elected leader! New state: ALIVE", sparkLatch)
-    spark      <- startMaster(port"8082", port"7077", client, sparkWait)
-    _          <- sparkLatch.get.timeout(timeout)
+    spark      <- waitForMaster(client, loggingLatch, timeout)
     masterName <- CatsDocker.interpret(client, Free.liftF(NamesRequest(spark)))
+    slave      <- waitForSlave(client, loggingLatch, timeout, masterName)
+  } yield (spark, slave)
+
+  def waitForSlave(
+      client:       DockerClient,
+      loggingLatch: LoggingLatch,
+      timeout:      FiniteDuration,
+      masterName:   List[String],
+  ): IO[ContainerId] = for {
     slaveLatch <- Deferred[IO, String]
     slaveWait   = loggingLatch("Successfully registered with master", slaveLatch)
     slave      <- startSlave(port"7077", masterName, client, slaveWait)
     _          <- slaveLatch.get.timeout(timeout)
-  } yield (spark, slave)
+  } yield slave
+
+  def waitForMaster(
+      client:       DockerClient,
+      loggingLatch: LoggingLatch,
+      timeout:      FiniteDuration,
+  ): IO[ContainerId] = for {
+    sparkLatch <- Deferred[IO, String]
+    sparkWait   = loggingLatch("I have been elected leader! New state: ALIVE", sparkLatch)
+    spark      <- startMaster(port"8082", port"7077", client, sparkWait)
+    _          <- sparkLatch.get.timeout(timeout)
+  } yield spark
 
   def startMaster(
       webPort:     Port,
@@ -56,10 +70,7 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
       spark <- Free.liftF(sparkMaster(webPort, servicePort))
       _     <-
         Free.liftF(
-          LoggingRequest(
-            spark,
-            logging,
-          )
+          LoggingRequest(spark, logging)
         )
     } yield spark,
   )
