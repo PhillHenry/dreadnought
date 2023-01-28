@@ -128,7 +128,7 @@ lazy val docs = project
     mdocOut       := file("target/docs"),
     mdocVariables := Map("VERSION" -> version.value),
   )
-  .dependsOn(core)
+  .dependsOn(examples)
   .enablePlugins(MdocPlugin)
 
 addCommandAlias("runLinter", ";scalafixAll --rules OrganizeImports")
