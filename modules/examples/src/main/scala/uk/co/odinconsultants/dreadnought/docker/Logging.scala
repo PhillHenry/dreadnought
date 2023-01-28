@@ -3,6 +3,8 @@ package uk.co.odinconsultants.dreadnought.docker
 import cats.effect.{Deferred, IO}
 
 object Logging {
+  
+  type LoggingLatch = (String, Deferred[IO, String]) => String => IO[Unit]
 
   def verboseWaitFor(seek: String, deferred: Deferred[IO, String]): String => IO[Unit] =
     (line: String) =>
