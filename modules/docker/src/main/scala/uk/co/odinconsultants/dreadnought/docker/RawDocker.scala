@@ -84,7 +84,7 @@ object RawDocker {
   def reporter[T](report: String => T): ResultCallback[Frame] = new ResultCallback[Frame] {
     override def onError(throwable: Throwable): Unit = report(throwable.toString)
     override def onNext(x: Frame): Unit              = report(s"onNext: $x")
-    override def onStart(closeable: Closeable): Unit = report(s"closeable = $closeable")
+    override def onStart(closeable: Closeable): Unit = report(s"onStart: closeable = $closeable")
     override def onComplete(): Unit                  = report("Complete")
     override def close(): Unit                       = report("close")
   }
@@ -98,6 +98,7 @@ object RawDocker {
     dockerClient
       .logContainerCmd(id)
       .withStdOut(true)
+      .withTailAll().withSince(-1).withStdErr(true)
       .withFollowStream(true)
       .exec(reporter(report))
 
