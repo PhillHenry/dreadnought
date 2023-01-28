@@ -18,7 +18,7 @@ import scala.concurrent.duration.*
 def run: IO[Unit] = for {
   client         <- CatsDocker.client
 
-  _ <- startSparkCluster(client, verboseWaitFor)
+  (master, slave) <- startSparkCluster(client, verboseWaitFor)
 } yield println("Started and stopped")
 
 run.unsafeRunSync()
