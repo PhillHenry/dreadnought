@@ -13,17 +13,11 @@ import scala.concurrent.duration.*
 
 def startCluster: IO[(ContainerId, ContainerId)] = for {
   client  <- CatsDocker.client
-  ids     <- startSparkCluster(client, verboseWaitFor)
-} yield ids
+  (master, slave)     <- startSparkCluster(client, verboseWaitFor)
+} yield (master, slave)
 
 val (master, slave) = startCluster.unsafeRunSync()
 
-```
-
-Let's see if they're running:
-
-```
-docker ps
 ```
 
 Now, let's stop our containers:
@@ -34,10 +28,4 @@ def stopCluster: IO[Unit] = for {
 } yield println(s"Stopped containers $master and $slave")
 
 stopCluster.unsafeRunSync()
-```
-
-And indeed they've stopped:
-
-```commandline
-docker ps
 ```
