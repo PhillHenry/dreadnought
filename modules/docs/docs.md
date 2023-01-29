@@ -13,8 +13,8 @@ import scala.concurrent.duration.*
 
 def startCluster: IO[(ContainerId, ContainerId)] = for {
   client  <- CatsDocker.client
-  (master, slave)     <- startSparkCluster(client, verboseWaitFor)
-} yield (master, slave)
+  ids     <- startSparkCluster(client, verboseWaitFor)
+} yield ids
 
 val (master, slave) = startCluster.unsafeRunSync()
 
