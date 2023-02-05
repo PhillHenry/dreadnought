@@ -27,12 +27,12 @@ object ZKKafkaMain extends IOApp.Simple {
     zkStart     <- Deferred[IO, String]
     kafkaLatch   = loggingLatch("started (kafka.server.KafkaServer)", kafkaStart)
     zkLatch      = loggingLatch("Started AdminServer on address", zkStart)
-    (zk, kafka) <- interpret(client, buildFree(kafkaLatch, zkLatch))
+    (zk, kafka) <- interpret(client, kafkaEcosystem(kafkaLatch, zkLatch))
     _           <- kafkaStart.get.timeout(timeout)
     _           <- zkStart.get.timeout(timeout)
   } yield (zk, kafka)
 
-  def buildFree(
+  def kafkaEcosystem(
       kafkaLogging: String => IO[Unit],
       zkLogging:    String => IO[Unit],
   ): Free[ManagerRequest, (ContainerId, ContainerId)] =

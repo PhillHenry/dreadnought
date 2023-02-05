@@ -42,6 +42,7 @@ object Dependencies {
     def http4s(artifact: String): ModuleID = "org.http4s" %% ("http4s-" + artifact) % V.http4s
 
     val cats       = "org.typelevel" %% "cats-core"           % V.cats
+    val catsFree   = "org.typelevel" %% "cats-free"           % V.cats
     val catsEffect = "org.typelevel" %% "cats-effect"         % V.catsEffect
     val fs2Core    = "co.fs2"        %% "fs2-core"            % V.fs2Core
     val kittens    = "org.typelevel" %% "kittens"             % V.kittens
