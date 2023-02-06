@@ -117,7 +117,7 @@ lazy val docs = project
     mdocIn        := file("modules/docs"),
     mdocOut       := file("target/docs"),
     mdocVariables := Map("VERSION" -> version.value),
-    mdoc          := run.in(Compile).evaluated,
+//    mdoc          := run.in(Compile).evaluated,
   )
   .dependsOn(examples)
   .enablePlugins(MdocPlugin)
