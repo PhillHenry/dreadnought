@@ -22,9 +22,10 @@ val (master, slave) = startCluster.unsafeRunSync()
 
 Now, let's stop our containers:
 
-```scala
+```scala mdoc
 def stopCluster: IO[Unit] = for {
-    _ <- race(toInterpret(client))(List(master, slave).map(StopRequest.apply))
+    client <- CatsDocker.client
+    _      <- race(toInterpret(client))(List(master, slave).map(StopRequest.apply))
 } yield println(s"Stopped containers $master and $slave")
 
 stopCluster.unsafeRunSync()
