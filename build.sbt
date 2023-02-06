@@ -119,6 +119,7 @@ lazy val docs = project
     mdocVariables := Map("VERSION" -> version.value),
 //    mdoc          := run.in(Compile).evaluated,
   )
+  .settings(commonSettings)
   .dependsOn(examples)
   .enablePlugins(MdocPlugin)
 
