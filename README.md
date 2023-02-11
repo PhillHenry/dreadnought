@@ -18,3 +18,12 @@ and wait for certain events in them.
 Caveats
 --
 Currently, Dreadnought only works on Unix-like system as it communicates with the Docker daemon via Unix sockets.
+
+Building
+--
+To run examples (and build the documentation at the same time), run
+
+```
+sbt docs/mdoc
+```
+Markdown documents will then appear in the `target` folder
