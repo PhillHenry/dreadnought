@@ -1,3 +1,19 @@
+# Introduction
+
+Dreadnought orchestrates the use of containers in a few lines of code.
+
+This example uses Scala/Cats.
+
+In this example, we're going to:
+1. start Zookeeper and Kafka Docker containers
+2. send messages to the Kafka instance
+3. read those messages back 
+4. then close down the whole cluster 
+
+all within a single JVM.
+
+# Code
+
 This is an example of starting a small Kafka cluster within Docker in just a few lines of code. 
 ```scala
 import cats.effect.{IO, IOApp}
@@ -17,20 +33,20 @@ val startCluster: IO[(ContainerId, ContainerId)] = for {
 // startCluster: IO[Tuple2[ContainerId, ContainerId]] = FlatMap(
 //   ioe = HandleErrorWith(
 //     ioa = Delay(
-//       thunk = uk.co.odinconsultants.dreadnought.docker.CatsDocker$$$Lambda$29264/0x000000010277d440@65156c66,
+//       thunk = uk.co.odinconsultants.dreadnought.docker.CatsDocker$$$Lambda$33223/0x00000001049ad440@75e70ff3,
 //       event = cats.effect.tracing.TracingEvent$StackTrace
 //     ),
-//     f = uk.co.odinconsultants.dreadnought.docker.CatsDocker$$$Lambda$29266/0x000000010277b840@5f924e8e,
+//     f = uk.co.odinconsultants.dreadnought.docker.CatsDocker$$$Lambda$33225/0x00000001049ab840@5ebc262f,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = repl.MdocSession$MdocApp$$Lambda$29267/0x000000010277a840@50e042a5,
+//   f = repl.MdocSession$MdocApp$$Lambda$33226/0x00000001049aa840@41bda5ea,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 
 val (zk, kafka) = startCluster.unsafeRunSync()
-// id = 56930c0ba46cc386c49a318c9989636617bdc7e21dc75b1cc28dd4c3284c0877, image = docker.io/bitnami/zookeeper:3.8, names = /vibrant_clarke
-// zk: ContainerId = "56930c0ba46cc386c49a318c9989636617bdc7e21dc75b1cc28dd4c3284c0877"
-// kafka: ContainerId = "0e22a78905e87488efc005bb199db0523a1a8d397e9eed67b4011e4b188118a2"
+// id = 11f973a03a6db0de7e3c5696ae4d5482cd99d87f3de2f19e4ca2e4a06f1c4b5e, image = docker.io/bitnami/zookeeper:3.8, names = /modest_beaver
+// zk: ContainerId = "11f973a03a6db0de7e3c5696ae4d5482cd99d87f3de2f19e4ca2e4a06f1c4b5e"
+// kafka: ContainerId = "eed1804a3a33d446a7202ba406a04a679292bebfa4d0223ae830650bd4344eab"
 ```
 Let's send some messages:
 
@@ -55,10 +71,10 @@ val sendMessages: IO[Unit] = for {
 // Admin client result: null
 // sendMessages: IO[Unit] = Map(
 //   ioe = Uncancelable(
-//     body = cats.effect.IO$$$Lambda$29374/0x0000000101c09040@6d90d958,
+//     body = cats.effect.IO$$$Lambda$33333/0x0000000104691040@28227765,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = repl.MdocSession$MdocApp$$Lambda$30176/0x00000001033d3840@3e84c867,
+//   f = repl.MdocSession$MdocApp$$Lambda$34097/0x0000000104a4b040@2ffd0e43,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 
@@ -79,8 +95,8 @@ val consumerSettings =
     .withBootstrapServers(s"${address}:${zkPort.value}")
     .withGroupId("my_group")
 // consumerSettings: ConsumerSettings[[A >: Nothing <: Any] => IO[A], String, String] = ConsumerSettingsImpl(
-//   keyDeserializer = Pure(value = Deserializer$860634043),
-//   valueDeserializer = Pure(value = Deserializer$1240328375),
+//   keyDeserializer = Pure(value = Deserializer$548780889),
+//   valueDeserializer = Pure(value = Deserializer$211337975),
 //   customBlockingContext = None,
 //   properties = Map(
 //     "auto.offset.reset" -> "earliest",
@@ -93,7 +109,7 @@ val consumerSettings =
 //   pollInterval = 50 milliseconds,
 //   pollTimeout = 50 milliseconds,
 //   commitRecovery = Default,
-//   recordMetadata = fs2.kafka.ConsumerSettings$$$Lambda$30151/0x000000010341c840@71180bb0,
+//   recordMetadata = fs2.kafka.ConsumerSettings$$$Lambda$34072/0x0000000104a2c040@53ab0fa3,
 //   maxPrefetchBatches = 2
 // )
     
@@ -113,18 +129,18 @@ val consumerStream = for {
 // consumerStream: IO[Vector[Matchable]] = Map(
 //   ioe = FlatMap(
 //     ioe = Pure(value = ()),
-//     f = fs2.Stream$CompileOps$$Lambda$30788/0x0000000104c53040@5544c313,
+//     f = fs2.Stream$CompileOps$$Lambda$34708/0x0000000105551840@c41a14e,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = repl.MdocSession$MdocApp$$Lambda$30789/0x0000000104c52840@4445877f,
+//   f = repl.MdocSession$MdocApp$$Lambda$34709/0x0000000105552840@1c8b2369,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 
 consumerStream.unsafeRunSync()
 // res1: Vector[Matchable] = Vector(
-//   CommittableConsumerRecord(ConsumerRecord(topic = test_topic, partition = 0, offset = 0, key = key_z, value = val_2, timestamp = Timestamp(createTime = 1676107624651), serializedKeySize = 5, serializedValueSize = 5, leaderEpoch = 0), CommittableOffset(test_topic-0 -> 1, my_group)),
-//   CommittableConsumerRecord(ConsumerRecord(topic = test_topic, partition = 1, offset = 0, key = key_x, value = val_0, timestamp = Timestamp(createTime = 1676107624318), serializedKeySize = 5, serializedValueSize = 5, leaderEpoch = 0), CommittableOffset(test_topic-1 -> 1, my_group)),
-//   CommittableConsumerRecord(ConsumerRecord(topic = test_topic, partition = 1, offset = 2, key = key_y, value = val_1, timestamp = Timestamp(createTime = 1676107624502), serializedKeySize = 5, serializedValueSize = 5, leaderEpoch = 0), CommittableOffset(test_topic-1 -> 3, my_group))
+//   CommittableConsumerRecord(ConsumerRecord(topic = test_topic, partition = 1, offset = 0, key = key_x, value = val_0, timestamp = Timestamp(createTime = 1676108514112), serializedKeySize = 5, serializedValueSize = 5, leaderEpoch = 0), CommittableOffset(test_topic-1 -> 1, my_group)),
+//   CommittableConsumerRecord(ConsumerRecord(topic = test_topic, partition = 1, offset = 2, key = key_y, value = val_1, timestamp = Timestamp(createTime = 1676108514402), serializedKeySize = 5, serializedValueSize = 5, leaderEpoch = 0), CommittableOffset(test_topic-1 -> 3, my_group)),
+//   CommittableConsumerRecord(ConsumerRecord(topic = test_topic, partition = 0, offset = 0, key = key_z, value = val_2, timestamp = Timestamp(createTime = 1676108514538), serializedKeySize = 5, serializedValueSize = 5, leaderEpoch = 0), CommittableOffset(test_topic-0 -> 1, my_group))
 // )
 ```
 
@@ -138,7 +154,7 @@ def stopCluster: IO[Unit] = for {
 } yield println(s"Stopped containers $zk and $kafka")
 
 stopCluster.unsafeRunSync()
-// Stopping container with ID 56930c0ba46cc386c49a318c9989636617bdc7e21dc75b1cc28dd4c3284c0877
-// Stopping container with ID 0e22a78905e87488efc005bb199db0523a1a8d397e9eed67b4011e4b188118a2
-// Stopped containers 56930c0ba46cc386c49a318c9989636617bdc7e21dc75b1cc28dd4c3284c0877 and 0e22a78905e87488efc005bb199db0523a1a8d397e9eed67b4011e4b188118a2
+// Stopping container with ID 11f973a03a6db0de7e3c5696ae4d5482cd99d87f3de2f19e4ca2e4a06f1c4b5e
+// Stopping container with ID eed1804a3a33d446a7202ba406a04a679292bebfa4d0223ae830650bd4344eab
+// Stopped containers 11f973a03a6db0de7e3c5696ae4d5482cd99d87f3de2f19e4ca2e4a06f1c4b5e and eed1804a3a33d446a7202ba406a04a679292bebfa4d0223ae830650bd4344eab
 ```

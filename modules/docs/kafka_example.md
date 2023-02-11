@@ -1,3 +1,19 @@
+# Introduction
+
+Dreadnought orchestrates the use of containers in a few lines of code.
+
+This example uses Scala/Cats.
+
+In this example, we're going to:
+1. start Zookeeper and Kafka Docker containers
+2. send messages to the Kafka instance
+3. read those messages back 
+4. then close down the whole cluster 
+
+all within a single JVM.
+
+# Code
+
 This is an example of starting a small Kafka cluster within Docker in just a few lines of code. 
 ```scala mdoc
 import cats.effect.{IO, IOApp}
