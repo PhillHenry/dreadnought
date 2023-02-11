@@ -14,3 +14,7 @@ Advantages
 Rather than messing around with YAML to get `docker-compose` to run a collection of applications, 
 achieve the same result in pure Scala code. You can even monitor the logs of your applications
 and wait for certain events in them.
+
+Caveats
+--
+Currently, Dreadnought only works on Unix-like system as it communicates with the Docker daemon via Unix sockets.
