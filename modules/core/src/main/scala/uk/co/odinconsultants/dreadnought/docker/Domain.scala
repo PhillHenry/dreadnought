@@ -26,6 +26,7 @@ case class StartRequest(
     env: Environment,
     networkMappings: NetworkMapping[Int],
     dnsMappings: DnsMapping[String],
+    name: Option[String] = None,
 ) extends ManagerRequest[ContainerId]
 
 case class StopRequest(containerId: ContainerId)  extends ManagerRequest[Unit]

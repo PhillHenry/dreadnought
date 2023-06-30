@@ -44,12 +44,12 @@ object CatsDocker {
     tree.foldMap(requestToIO)
 
   def interpreter[A](client: DockerClient): ManagerRequest[A] => IO[A] = {
-    case StartRequest(image, cmd, env, ports, dns) =>
-      createAndStart(client, image, cmd, env, ports, dns)
-    case StopRequest(containerId)                  => stopContainer(client, containerId.toString)
-    case NamesRequest(containerId)                 =>
+    case StartRequest(image, cmd, env, ports, dns, name) =>
+      createAndStart(client, image, cmd, env, ports, dns, name)
+    case StopRequest(containerId)                        => stopContainer(client, containerId.toString)
+    case NamesRequest(containerId)                       =>
       IO(listContainers(client).filter(_.getId == containerId.toString).flatMap(_.getNames))
-    case LoggingRequest(containerId, cb)           => loggingContainer(client, containerId, cb).start
+    case LoggingRequest(containerId, cb)                 => loggingContainer(client, containerId, cb).start
   }
 
   def loggingContainer(
@@ -77,9 +77,10 @@ object CatsDocker {
       environment:  Environment,
       portMappings: NetworkMapping[Port],
       dnsMappings:  DnsMapping[String],
+      name:         Option[String],
   ): IO[ContainerId] = for {
     container <-
-      createContainer(dockerClient, image, command, environment, portMappings, dnsMappings)
+      createContainer(dockerClient, image, command, environment, portMappings, dnsMappings, name)
     id        <- start(dockerClient, container)
   } yield id
 
@@ -90,6 +91,7 @@ object CatsDocker {
       environment:  Environment,
       portMappings: NetworkMapping[Port],
       dnsMappings:  DnsMapping[ApiVersion],
+      name:         Option[String],
   ): IO[CreateContainerResponse] = IO {
     import scala.jdk.CollectionConverters.*
 
@@ -100,6 +102,8 @@ object CatsDocker {
       .withAttachStderr(false)
       .withEnv(environment.asJava)
       .withCmd("/bin/bash", "-c", command.toString)
+
+    name.map(config.withName)
 
     val portBindings                      = new Ports
     val exposedPorts: List[ExposedPort]   = for {
