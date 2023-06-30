@@ -92,7 +92,7 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
   )
 
   def sparkMaster(webPort: Port, servicePort: Port): StartRequest = StartRequest(
-    ImageName("bde2020/spark-master:3.2.1-hadoop3.2"),
+    ImageName("ph1ll1phenry/spark_master_3_3_0_scala_2_13_hadoop_3"),
     Command("/bin/bash /master.sh"),
     List("INIT_DAEMON_STEP=setup_spark"),
     List(8080 -> webPort.value, 7077 -> servicePort.value),
@@ -100,7 +100,7 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
   )
 
   def sparkSlave(masterName: List[String], servicePort: Port): StartRequest = StartRequest(
-    ImageName("bde2020/spark-worker:3.2.1-hadoop3.2"),
+    ImageName("ph1ll1phenry/spark_worker_3_3_0_scala_2_13_hadoop_3"),
     Command("/bin/bash /worker.sh"),
     List(s"SPARK_MASTER=spark://spark-master:${servicePort.value}"),
     List.empty,

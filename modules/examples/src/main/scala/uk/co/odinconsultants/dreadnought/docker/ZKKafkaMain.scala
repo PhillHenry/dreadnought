@@ -25,7 +25,7 @@ object ZKKafkaMain extends IOApp.Simple {
   ): IO[(ContainerId, ContainerId)] = for {
     kafkaStart  <- Deferred[IO, String]
     zkStart     <- Deferred[IO, String]
-    kafkaLatch   = loggingLatch("started (kafka.server.KafkaServer)", kafkaStart)
+    kafkaLatch   = loggingLatch("started (kafka.server.Kafka", kafkaStart)
     zkLatch      = loggingLatch("Started AdminServer on address", zkStart)
     (zk, kafka) <- interpret(client, kafkaEcosystem(kafkaLatch, zkLatch))
     _           <- kafkaStart.get.timeout(timeout)
