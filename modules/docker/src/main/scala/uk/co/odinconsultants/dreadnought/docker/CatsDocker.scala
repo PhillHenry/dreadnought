@@ -84,6 +84,11 @@ object CatsDocker {
     id        <- start(dockerClient, container)
   } yield id
 
+  /**
+   * If you use a name, a container with that name might already exist.
+   * Therefore, TODO: delete the old container.
+   * See https://stackoverflow.com/questions/31697828/docker-name-is-already-in-use-by-container
+   */
   private def createContainer(
       dockerClient: DockerClient,
       image:        ImageName,
