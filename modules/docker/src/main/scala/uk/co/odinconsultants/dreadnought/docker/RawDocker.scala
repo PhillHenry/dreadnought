@@ -68,7 +68,7 @@ object RawDocker {
   def listContainers(dockerClient: DockerClient): List[Container] =
     val containers: Array[Container] = for {
       container <- dockerClient
-                     .listContainersCmd()
+                     .listContainersCmd().withShowAll(true)
                      .exec()
                      .toArray()
                      .map(_.asInstanceOf[Container])

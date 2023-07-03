@@ -7,7 +7,7 @@ import cats.free.Free
 import fs2.Stream
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
-import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse}
+import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse, RemoveContainerCmd}
 import com.github.dockerjava.api.model.{Container, ExposedPort, Frame, Link, Ports}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
@@ -89,16 +89,16 @@ object CatsDocker {
       dockerClient: DockerClient,
       maybeName:    Option[String],
       containers:   List[Container],
-  ): IO[Unit] = IO {
+  ): IO[Unit] = {
     import cats.implicits.*
-    val removals: List[IO[Unit]] = for {
+    val removals: List[IO[Void]] = for {
       name      <- maybeName.toList
-      container <- containers if container.getNames.contains(name)
+      container <- containers if container.getNames.contains(s"/${name}")
     } yield IO {
         val removeContainerCommand = dockerClient.removeContainerCmd(container.getId)
         removeContainerCommand.exec()
       }
-    removals.sequence
+    removals.sequence.as(())
   }
 
   /** If you use a name, a container with that name might already exist.
