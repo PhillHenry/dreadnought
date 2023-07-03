@@ -20,7 +20,7 @@ object SparkStructuredStreamingMain extends IOApp.Simple {
     */
   def run: IO[Unit] = for {
     client         <- CatsDocker.client
-    (spark, slave) <- startSparkCluster(client, verboseWaitFor)
+    (spark, slave) <- startSparkCluster(client, verboseWaitFor(None))
     _              <- race(toInterpret(client))(
                         List(spark, slave).map(StopRequest.apply)
                       )

@@ -8,7 +8,7 @@ import fs2.Stream
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse}
-import com.github.dockerjava.api.model.{ExposedPort, Frame, Link, Ports}
+import com.github.dockerjava.api.model.{Container, ExposedPort, Frame, Link, Ports}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 import uk.co.odinconsultants.dreadnought.docker.RawDocker.*
@@ -79,16 +79,32 @@ object CatsDocker {
       dnsMappings:  DnsMapping[String],
       name:         Option[String],
   ): IO[ContainerId] = for {
+    _         <- removeContainers(dockerClient, name, listContainers(dockerClient))
     container <-
       createContainer(dockerClient, image, command, environment, portMappings, dnsMappings, name)
     id        <- start(dockerClient, container)
   } yield id
 
-  /**
-   * If you use a name, a container with that name might already exist.
-   * Therefore, TODO: delete the old container.
-   * See https://stackoverflow.com/questions/31697828/docker-name-is-already-in-use-by-container
-   */
+  private def removeContainers(
+      dockerClient: DockerClient,
+      maybeName:    Option[String],
+      containers:   List[Container],
+  ): IO[Unit] = IO {
+    import cats.implicits.*
+    val removals: List[IO[Unit]] = for {
+      name      <- maybeName.toList
+      container <- containers if container.getNames.contains(name)
+    } yield IO {
+        val removeContainerCommand = dockerClient.removeContainerCmd(container.getId)
+        removeContainerCommand.exec()
+      }
+    removals.sequence
+  }
+
+  /** If you use a name, a container with that name might already exist.
+    * Therefore, TODO: delete the old container.
+    * See https://stackoverflow.com/questions/31697828/docker-name-is-already-in-use-by-container
+    */
   private def createContainer(
       dockerClient: DockerClient,
       image:        ImageName,

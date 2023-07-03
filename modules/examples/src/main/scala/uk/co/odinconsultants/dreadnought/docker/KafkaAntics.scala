@@ -221,7 +221,7 @@ object KafkaAntics extends IOApp.Simple {
 
   def run: IO[Unit] = for {
     client      <- CatsDocker.client
-    (zk, kafka) <- ZKKafkaMain.startKafkaCluster(client, verboseWaitFor)
+    (zk, kafka) <- ZKKafkaMain.startKafkaCluster(client, verboseWaitFor(None))
     _           <- produceMessages(ip"127.0.0.1", port"9092")
                      .handleErrorWith(x => Stream.eval(IO(x.printStackTrace())))
                      .compile

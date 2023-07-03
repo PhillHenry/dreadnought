@@ -14,7 +14,7 @@ object ZKKafkaMain extends IOApp.Simple {
   def run: IO[Unit] =
     for {
       client      <- client
-      (zk, kafka) <- startKafkaCluster(client, verboseWaitFor)
+      (zk, kafka) <- startKafkaCluster(client, verboseWaitFor(None))
       _           <- interpret(client, tearDownFree(zk, kafka))
     } yield println("Started and stopped")
 
