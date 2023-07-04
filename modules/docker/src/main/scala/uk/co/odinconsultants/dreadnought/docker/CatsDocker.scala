@@ -141,7 +141,7 @@ object CatsDocker {
 
     name.map { x =>
       config.withName(x)
-      config.withHostName(x)
+//      config.withHostName(x)
     }
     networkName.map { name =>
       config.getHostConfig.withNetworkMode(name)
