@@ -14,7 +14,7 @@ object KafkaAntics extends IOApp.Simple {
       port:    Port,
       topic:   String = "test_topic",
   ): Stream[IO, CommittableConsumerRecord[IO, String, String]] = {
-    createCustomTopic(topic)
+    createCustomTopic(topic, port)
 
     val bootstrapServer                                        = s"${address}:${port.value}"
     val producerSettings: ProducerSettings[IO, String, String] =
@@ -66,28 +66,29 @@ object KafkaAntics extends IOApp.Simple {
     */
   def createCustomTopic(
       topic:             String,
+      admin:             Port,
       topicConfig:       Map[String, String] = Map.empty,
       partitions:        Int = 2,
-      replicationFactor: Int = 1,
+      replicationFactor: Int = 1
   ): Try[Unit] = {
     println(s"Creating $topic")
     val newTopic = new NewTopic(topic, partitions, replicationFactor.toShort)
       .configs(topicConfig.asJava)
 
-    withAdminClient { adminClient =>
+    withAdminClient(admin) { adminClient =>
       adminClient
         .createTopics(Seq(newTopic).asJava)
         .all
         .get(4, TimeUnit.SECONDS)
     }.map(x => println(s"Admin client result: $x"))
   }
-  protected def withAdminClient[T](
-      body: AdminClient => T
+  protected def withAdminClient[T](admin: Port)(
+      body:                               AdminClient => T
   ): Try[T] = {
     val adminClientCloseTimeout: FiniteDuration = 2.seconds
     val adminClient                             = AdminClient.create(
       Map[String, Object](
-        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG       -> "127.0.0.1:9092",
+        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG       -> s"127.0.0.1:${admin.value}",
         AdminClientConfig.CLIENT_ID_CONFIG               -> "test-kafka-admin-client",
         AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG      -> "10000",
         AdminClientConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG -> "10000",

@@ -65,7 +65,7 @@ object CatsDocker {
       q          <- Stream.eval(Queue.unbounded[IO, String])
       _          <- Stream.eval(IO.delay {
                       def report(msg: String): Unit =
-                        dispatcher.unsafeRunAndForget(q.offer(s"$containerId $msg"))
+                        dispatcher.unsafeRunAndForget(q.offer(msg))
                       log(client, containerId.toString, report)
                     })
       _          <- Stream.eval(q.take.flatMap(cb)).repeat
