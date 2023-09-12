@@ -28,6 +28,7 @@ case class StartRequest(
     dnsMappings: DnsMapping[String],
     name: Option[String] = None,
     networkName: Option[String] = None,
+    volumes: List[(String, String)] = List.empty,
 ) extends ManagerRequest[ContainerId]
 
 case class StopRequest(containerId: ContainerId)  extends ManagerRequest[Unit]

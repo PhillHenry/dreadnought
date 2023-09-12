@@ -8,7 +8,7 @@ import fs2.Stream
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.async.ResultCallback
 import com.github.dockerjava.api.command.{CreateContainerCmd, CreateContainerResponse, RemoveContainerCmd}
-import com.github.dockerjava.api.model.{Container, ExposedPort, Frame, Link, Network, Ports}
+import com.github.dockerjava.api.model.{AccessMode, Bind, Container, ExposedPort, Frame, Link, Network, Ports, SELContext, Volume}
 import com.github.dockerjava.core.{DefaultDockerClientConfig, DockerClientImpl}
 import com.github.dockerjava.httpclient5.ApacheDockerHttpClient
 import uk.co.odinconsultants.dreadnought.docker.RawDocker.*
@@ -47,12 +47,12 @@ object CatsDocker {
     tree.foldMap(requestToIO)
 
   def interpreter[A](client: DockerClient): ManagerRequest[A] => IO[A] = {
-    case x @ StartRequest(_, _, _, _, _, _, _) =>
+    case x @ StartRequest(_, _, _, _, _, _, _, _) =>
       createAndStart(client, x)
-    case StopRequest(containerId)              => stopContainer(client, containerId.toString)
-    case NamesRequest(containerId)             =>
+    case StopRequest(containerId)                 => stopContainer(client, containerId.toString)
+    case NamesRequest(containerId)                =>
       IO(listContainers(client).filter(_.getId == containerId.toString).flatMap(_.getNames))
-    case LoggingRequest(containerId, cb)       => loggingContainer(client, containerId, cb).start
+    case LoggingRequest(containerId, cb)          => loggingContainer(client, containerId, cb).start
   }
 
   def loggingContainer(
@@ -114,7 +114,8 @@ object CatsDocker {
     networks.foreach { network =>
       if (network.getName == name) {
         dockerClient
-          .removeNetworkCmd(name).withNetworkId(network.getId)
+          .removeNetworkCmd(name)
+          .withNetworkId(network.getId)
           .exec()
       }
     }
@@ -159,9 +160,13 @@ object CatsDocker {
       new Link(name, alias)
     }
     config.getHostConfig.setLinks(links.toList*)
+    val volumeBindings                    = start.volumes.map { case (src, dst) =>
+      new Bind(src, new Volume(dst), AccessMode.rw, SELContext.shared)
+    }.asJava
     val response: CreateContainerResponse = config
       .withExposedPorts(exposedPorts.asJava)
       .withHostConfig(config.getHostConfig.withPortBindings(portBindings))
+      .withHostConfig(config.getHostConfig.withBinds(volumeBindings))
       .exec()
     response
   }
